@@ -31,7 +31,7 @@ int ODriveCanMtr::process_cmd(uint8_t cmd, uint8_t len, uint8_t* data)
             //Bin, I don't care
             break;
         case heartbeat:
-            _mtr_last_hb = millis();
+            _mtr_last_hb = millis(); 
             if (len < 5) {
                 //Err
                 return invalid_data_length;
@@ -140,7 +140,7 @@ int ODriveCanMtr::process_msg(uint16_t can_id, uint8_t len, uint8_t* data)
     }
 
     //Rest (5 bits) are the command ID
-    uint8_t cmd = (can_id & 0xFFFFF);
+    uint8_t cmd = (can_id & 0x1F);
     return process_cmd(cmd, len, data);
 }
 
@@ -158,7 +158,7 @@ int ODriveCanMtr::req_info_cmd(cmd_id cmd)
         case get_bus_voltage_current:
         case get_torques:
         case get_powers:
-            can_send_msg((_node_id << 5) + ((uint8_t) cmd), 0, 0);
+            return can_send_msg((_node_id << 5) + ((uint8_t) cmd), 0, 0);
             break;
         default:
             //Not one of the right IDs
@@ -172,76 +172,220 @@ int ODriveCanMtr::req_info_cmd(cmd_id cmd)
 /*
     Set motor values
 */
-set_axis_state(uint32_t state)
+int ODriveCanMtr::stop()
 {
-    uint8_t data[4];
-    data[3] = (state >> 24);
-    data[2] = 
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::estop), 0, 0);
 }
 
-set_cont_mode(uint32 cont_mode, uint32_t ip_mode)
+int ODriveCanMtr::set_axis_state(uint32_t state)
 {
-
+    if (state > anticogging_calibration) { //Update this condition if more states are added.
+        return input_out_of_range
+    }
+    uint8_t data[8];
+    data[3] = (state >> 24) & 0xFF;
+    data[2] = (state >> 16) & 0xFF;
+    data[1] = (state >> 8) & 0xFF;
+    data[1] = state & 0xFF;
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_axis_state), 8, data);
 }
 
-set_ip_pos(float ip_pos, int16_t vel, int16_t torque)
+int ODriveCanMtr::set_cont_mode(uint32_t cont_mode, uint32_t ip_mode)
 {
+    if ((cont_mode > position_control) || (ip_mode > tuning)) {
+        return input_out_of_range;
+    }
+    uint8_t data[8];
+    data[7] = (ip_mode >> 24) & 0xFF;
+    data[6] = (ip_mode >> 16) & 0xFF;
+    data[5] = (ip_mode >> 8) & 0xFF;
+    data[4] = (ip_mode) & 0xFF;
 
+    data[3] = (cont_mode >> 24) & 0xFF;
+    data[2] = (cont_mode >> 16) & 0xFF;
+    data[1] = (cont_mode >> 8) & 0xFF;
+    data[0] = (cont_mode) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_controller_mode), 8, data);
 }
 
-set_input_vel(float vel, float torque)
+int ODriveCanMtr::set_ip_pos(float ip_pos, int16_t vel, int16_t torque)
 {
+    uint8_t data[8];
+    flt_cnv.flt = ip_pos;
+    data[7] = (torque >> 8) 0xFF;
+    data[6] = (torque) & 0xFF;
 
+    data[5] = (vel >> 8) & 0xFF;
+    data[4] = (vel) & 0xFF;
+
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_input_pos), 8, data);
 }
 
-set_input_torq(float torque)
+int ODriveCanMtr::set_ip_vel(float vel, float torque)
 {
+    uint8_t data[8];
 
+    flt_cnv.flt = torque;
+    data[7] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[6] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[5] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[4] = (flt_cnv.u32) & 0xFF;
+
+    flt_cnv.flt = vel;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_input_vel), 8, data);
 }
 
-set_lim(float vel_lim, float cur_lim)
+int ODriveCanMtr::set_ip_torq(float torque)
 {
+    uint8_t data[8];
+    
+    flt_conv.flt = torque;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
 
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_input_torque), 8, data);
 }
 
-set_traj_vel_limit(float vel_lim)
+int ODriveCanMtr::set_lim(float vel_lim, float cur_lim)
 {
+    uint8_t data[8];
 
+    flt_conv.flt = cur_lim;
+    data[7] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[6] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[5] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[4] = (flt_cnv.u32) & 0xFF;
+
+    flt_cnv.flt = vel_lim;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_limits), 8, data);
+} 
+
+int ODriveCanMtr::set_traj_vel_limit(float vel_lim)
+{
+    uint8_t data[8];
+    
+    flt_conv.flt = vel_lim;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_traj_vel_limits), 8, data);   
 }
 
-set_traj_accel_limits(float accel_limit, float decel_limit)
+int ODriveCanMtr::set_traj_accel_limits(float accel_limit, float decel_limit)
 {
+    uint8_t data[8];
 
+    flt_conv.flt = decel_limit;
+    data[7] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[6] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[5] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[4] = (flt_cnv.u32) & 0xFF;
+
+    flt_cnv.flt = accel_limit;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_traj_accel_limits), 8, data);   
 }
 
-set_traj_inertia(float interia)
+int ODriveCanMtr::set_traj_inertia(float interia)
 {
+    uint8_t data[8];
+    
+    flt_conv.flt = interia;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
 
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_traj_intertia), 8, data);   
 }
 
-reboot_mtr()
+int ODriveCanMtr::reboot_mtr(uint8_t action)
 {
+    if (action > enter_dfu_mode) {
+        return input_out_of_range;
+    }
 
+    uint8_t data[8];
+    data[0] = action;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::reboot), 8, data);   
 }
 
-clear_errors(uint8_t error)
+int ODriveCanMtr::clear_errors()
 {
+    uint8_t data[8];
 
+    data[0] = 0;
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::reboot), 8, data);
 }
 
-set_absolute_position(float pos)
+int ODriveCanMtr::set_absolute_position(float pos)
 {
+    uint8_t data[8];
+    
+    flt_conv.flt = pos;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
 
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_abs_position), 8, data);
 }
 
-set_position_gain(float pos_gain)
+int ODriveCanMtr::set_position_gain(float pos_gain)
 {
+    uint8_t data[8];
+    
+    flt_conv.flt = pos_gain;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
 
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_pos_gain), 8, data);
 }
 
-set_velocity_gains(float vel_gain, float vel_integ_gain)
+int ODriveCanMtr::set_velocity_gains(float vel_gain, float vel_integ_gain)
 {
+   uint8_t data[8];
 
+    flt_conv.flt = vel_integ_gain;
+    data[7] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[6] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[5] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[4] = (flt_cnv.u32) & 0xFF;
+
+    flt_cnv.flt = vel_gain;
+    data[3] = (flt_cnv.u32 >> 24) & 0xFF;
+    data[2] = (flt_cnv.u32 >> 16) & 0xFF;
+    data[1] = (flt_cnv.u32 >> 8) & 0xFF;
+    data[0] = (flt_cnv.u32) & 0xFF;
+
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_vel_gains), 8, data);   
 }
 
 uint8_t ODriveCanMtr::node_id()

@@ -23,7 +23,7 @@ enum cmd_id {
     set_input_vel           = 0x00d,
     set_input_torque        = 0x00e,
     set_limit               = 0x00f,
-    set_traj_vel_limit      = 0x011,
+    set_traj_vel_limits     = 0x011,
     set_traj_accel_limits   = 0x012,
     set_traj_intertia       = 0x013,
     get_iq                  = 0x014,
@@ -35,8 +35,8 @@ enum cmd_id {
     set_pos_gain            = 0x01a,
     set_vel_gains           = 0x01b,
     get_torques             = 0x01c,
-    get_powers              = 0x1d,
-    enter_dfu_mode          = 0x1f
+    get_powers              = 0x01d,
+    enter_dfu_mode          = 0x01f
 };
 
 enum proccess_return {
@@ -46,7 +46,52 @@ enum proccess_return {
     can_bus_no_response = 0x02,
     not_info_cmd = 0x03,
     not_valid_cmd = 0x04,
-    invalid_data_length = 0x05
+    invalid_data_length = 0x05,
+    input_out_of_range = 0x06
+};
+
+enum axis_states {
+    undef = 0x0,
+    idle = 0x1,
+    startup_sequence = 0x2,
+    full_calibration_sequence = 0x3,
+    motor_calibration = 0x4,
+    sensorless_control = 0x5,
+    encoder_index_search = 0x6,
+    encoder_offset_calibration = 0x7,
+    closed_loop_control = 0x8,
+    lockin_spin = 0x9,
+    encoder_dir_find = 0xA,
+    homing = 0xB,
+    encoder_hall_polarity_calibration = 0xC,
+    encoder_hall_phase_calibration = 0xD,
+    anticogging_calibration = 0xE
+};
+
+enum control_mode {
+    voltage_control = 0x0,
+    torque_control = 0x1,
+    velocity_control = 0x2,
+    position_control = 0x3
+};
+
+enum input_mode {
+    inactive = 0x0,
+    passthrough = 0x1,
+    vel_ramp = 0x2,
+    pos_filter = 0x3,
+    mix_channels = 0x4,
+    trap_traj = 0x5,
+    torque_ramp = 0x6,
+    mirror = 0x7,
+    tuning = 0x8
+};
+
+enum action {
+    reboot = 0x0,
+    save_configuration = 0x1,
+    erase_configuration = 0x2,
+    enter_dfu_mode = 0x3
 };
 
 struct mtr_values {
@@ -68,7 +113,6 @@ struct mtr_values {
     float mech_power;
 };
 
-
 class ODriveCanMtr
 {
     private:
@@ -88,23 +132,24 @@ class ODriveCanMtr
         bool config_motor();
         int req_info_cmd(cmd_id cmd);
 
-        set_axis_state(uint32_t state);
-        set_cont_mode(uint32 cont_mode, uint32_t ip_mode);
-        set_ip_pos(float ip_pos, int16_t vel, int16_t torque);
-        set_input_vel(float vel, float torque);
-        set_input_torq(float torque);
-        set_lim(float vel_lim, float cur_lim);
-        set_traj_vel_limit(float vel_lim);
-        set_traj_accel_limits(float accel_limit, float decel_limit);
-        set_traj_inertia(float interia);
-        reboot_mtr();
-        clear_errors(uint8_t error);
-        set_absolute_position(float pos);
-        set_position_gain(float pos_gain);
-        set_velocity_gains(float vel_gain, float vel_integ_gain);
+        int set_axis_state(uint32_t state);
+        int set_cont_mode(uint32_t cont_mode, uint32_t ip_mode);
+        int set_ip_pos(float ip_pos, int16_t vel, int16_t torque);
+        int set_ip_vel(float vel, float torque);
+        int set_ip_torq(float torque);
+        int set_lim(float vel_lim, float cur_lim);
+        int set_traj_vel_limit(float vel_lim);
+        int set_traj_accel_limits(float accel_limit, float decel_limit);
+        int set_traj_inertia(float interia);
+        int reboot_mtr(uint8_t action);
+        int clear_errors();
+        int set_absolute_position(float pos);
+        int set_position_gain(float pos_gain);
+        int set_velocity_gains(float vel_gain, float vel_integ_gain);
 
         ~ODriveCanMtr();
 
+        //Values
         uint8_t node_id();
         bool mtr_connected();
         mtr_values last_mtr_values;
