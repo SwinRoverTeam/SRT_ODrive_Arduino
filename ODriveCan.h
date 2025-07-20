@@ -44,10 +44,11 @@ enum proccess_return {
     success = 0x00,
     can_bus_fault = 0x01,
     can_bus_no_response = 0x02,
-    not_info_cmd = 0x03,
-    not_valid_cmd = 0x04,
-    invalid_data_length = 0x05,
-    input_out_of_range = 0x06
+    can_transmission_fail = 0x03,
+    not_info_cmd = 0x04,
+    not_valid_cmd = 0x05,
+    invalid_data_length = 0x06,
+    input_out_of_range = 0x07
 };
 
 enum axis_states {
@@ -88,10 +89,10 @@ enum input_mode {
 };
 
 enum action {
-    reboot = 0x0,
-    save_configuration = 0x1,
-    erase_configuration = 0x2,
-    enter_dfu_mode = 0x3
+    a_reboot = 0x0,
+    a_save_configuration = 0x1,
+    a_erase_configuration = 0x2,
+    a_enter_dfu_mode = 0x3
 };
 
 struct mtr_values {
@@ -119,18 +120,19 @@ class ODriveCanMtr
         uint8_t _node_id; //Be careful 0x3f is the broadcast ID!
 
         //Can message abstraction function
-        int (*can_send_msg) (uint16_t can_id, uint8_t len, uint8_t* data);
+        int (*can_send_msg) (uint16_t can_id, uint8_t len, uint8_t* data, bool rtr);
         uint32_t _mtr_last_hb;
         float_conv flt_cnv;
+        uint16_t _timeout;
     public:
-        ODriveCanMtr(int (*send_func) (uint16_t can_id, uint8_t len, uint8_t* data), uint8_t node_id);
+        ODriveCanMtr(int (*send_func) (uint16_t can_id, uint8_t len, uint8_t* data, bool rtr), uint8_t node_id);
         void begin();
-        //bool send_command(cmd_id cmd, uint8_t len, uint8_t* data);   
         int process_cmd(cmd_id cmd, uint8_t len, uint8_t* data);
         int process_msg(uint16_t can_id, uint8_t len, uint8_t* data);
         int stop();
         bool config_motor();
         int req_info_cmd(cmd_id cmd);
+        bool set_timeout(uint16_t timeout_ms);
 
         int set_axis_state(uint32_t state);
         int set_cont_mode(uint32_t cont_mode, uint32_t ip_mode);
