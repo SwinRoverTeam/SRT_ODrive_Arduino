@@ -95,6 +95,31 @@ enum action {
     a_enter_dfu_mode = 0x3
 };
 
+struct errors {
+    bool initalising;
+    bool system_level;
+    bool timing_error;
+    bool missing_estimate;
+    bool bad_config;
+    bool drv_fault;
+    bool missing_input;
+    bool dc_bus_over_voltage;
+    bool dc_bus_under_voltage;
+    bool dc_bus_over_current;
+    bool dc_bus_over_regen_current;
+    bool current_limit_violation;
+    bool motor_over_temp;
+    bool inverter_over_temp;
+    bool velocity_limit_violation;
+    bool position_limit_violation;
+    bool watchdog_timer_expired;
+    bool estop_requested;
+    bool spinout_detected;
+    bool brake_resistor_disarmed;
+    bool thermistor_disconnected;
+    bool calibration_error;
+};
+
 struct mtr_values {
     uint32_t axis_error;
     uint8_t axis_state;
@@ -112,6 +137,7 @@ struct mtr_values {
     float torque_estimate;
     float elec_power;
     float mech_power;
+    errors current_errors;
 };
 
 class ODriveCanMtr
@@ -124,6 +150,7 @@ class ODriveCanMtr
         uint32_t _mtr_last_hb;
         float_conv flt_cnv;
         uint16_t _timeout;
+        void proccess_errors(uint32_t input);
     public:
         ODriveCanMtr(int (*send_func) (uint16_t can_id, uint8_t len, uint8_t* data, bool rtr), uint8_t node_id);
         void begin();

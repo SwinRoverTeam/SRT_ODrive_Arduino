@@ -47,6 +47,7 @@ int ODriveCanMtr::process_cmd(cmd_id cmd, uint8_t len, uint8_t* data)
             }
             last_mtr_values.active_errors = (data[3] << 24) + (data[2] << 16) + (data[1] << 8) + (data[0]);
             last_mtr_values.disarm_reason = (data[7] << 24) + (data[6] << 16) + (data[5] << 8) + (data[4]);
+            proccess_errors(last_mtr_values.active_errors);
             break;
         case tx_sdo:
             //Dont care
@@ -401,4 +402,29 @@ uint8_t ODriveCanMtr::node_id()
 bool ODriveCanMtr::mtr_connected()
 {
     return (millis() - _mtr_last_hb < _timeout);
+}
+
+void ODriveCanMtr::proccess_errors(uint32_t input)
+{
+    last_mtr_values.current_errors.initalising = (input >> 0) & 0b1;
+    last_mtr_values.current_errors.system_level = (input >> 1) & 0b1;
+    last_mtr_values.current_errors.timing_error = (input >> 2) & 0b1;
+    last_mtr_values.current_errors.bad_config = (input >> 3) & 0b1;
+    last_mtr_values.current_errors.drv_fault = (input >> 4) & 0b1;
+    last_mtr_values.current_errors.missing_input = (input >> 5) & 0b1;
+    last_mtr_values.current_errors.dc_bus_over_voltage = (input >> 6) & 0b1;
+    last_mtr_values.current_errors.dc_bus_under_voltage = (input >> 7) & 0b1;
+    last_mtr_values.current_errors.dc_bus_over_current = (input >> 8) & 0b1;
+    last_mtr_values.current_errors.dc_bus_over_regen_current = (input >> 9) & 0b1;
+    last_mtr_values.current_errors.current_limit_violation = (input >> 10) & 0b1;
+    last_mtr_values.current_errors.motor_over_temp = (input >> 11) & 0b1;
+    last_mtr_values.current_errors.inverter_over_temp = (input >> 12) & 0b1;
+    last_mtr_values.current_errors.velocity_limit_violation = (input >> 13) & 0b1;
+    last_mtr_values.current_errors.position_limit_violation = (input >> 14) & 0b1;
+    last_mtr_values.current_errors.watchdog_timer_expired = (input >> 15) & 0b1;
+    last_mtr_values.current_errors.estop_requested = (input >> 16) & 0b1;
+    last_mtr_values.current_errors.spinout_detected = (input >> 17) & 0b1;
+    last_mtr_values.current_errors.brake_resistor_disarmed = (input >> 18) & 0b1;
+    last_mtr_values.current_errors.thermistor_disconnected = (input >> 19) & 0b1;
+    last_mtr_values.current_errors.calibration_error = (input >> 20) & 0b1;
 }
