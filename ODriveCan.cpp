@@ -400,5 +400,5 @@ uint8_t ODriveCanMtr::node_id()
 
 bool ODriveCanMtr::mtr_connected()
 {
-    return (millis() - _mtr_last_hb > _timeout);
+    return (millis() - _mtr_last_hb < _timeout);
 }
