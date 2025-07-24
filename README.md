@@ -25,7 +25,7 @@ although _send_can_ can be changed to a name of your choice.
 can_id is the id of the message that will be sent.\
 len is the length of the data array in bytes.\
 data is a pointer to an array of bytes that contains the message, it is the same length an len.\
-rtr is for if the RTR bit should be set to 0 (false) or 1 (true), see the [RTR](/SRT_ODrive_Arduino/main/README#remote-transmission-request-rtr) section for more details.
+rtr is for if the RTR bit should be set to 0 (false) or 1 (true), see the [RTR](/SRT_ODrive_Arduino/main/README.md#remote-transmission-request-rtr) section for more details.
 
 The function should return one of four results;
 - success (0) - Message was sucessfully sent
@@ -37,7 +37,7 @@ A pointer this function and the node ID of the motor must be passed into the con
 ```C++
 ODriveCanMtr mtr1(&send_can, 0);
 ```
-Details about node ID can be found [here](/SRT_ODrive_Arduino/main/README#node-id).
+Details about node ID can be found [here](/SRT_ODrive_Arduino/main/README.md#node-id).
 
 ### Receiving CAN messages
 
