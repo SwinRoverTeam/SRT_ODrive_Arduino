@@ -39,60 +39,60 @@ enum cmd_id {
     enter_dfu_mode          = 0x01f
 };
 
-enum process_result {
-    not_this_node           = -0x1,
-    success                 = 0x00,
-    can_bus_fault           = 0x01,
-    can_bus_no_response     = 0x02,
-    can_transmission_fail   = 0x03,
-    not_info_cmd            = 0x04,
-    not_valid_cmd           = 0x05,
-    invalid_data_length     = 0x06,
-    input_out_of_range      = 0x07
+enum proccess_return {
+    not_this_node = -0x1,
+    success = 0x00,
+    can_bus_fault = 0x01,
+    can_bus_no_response = 0x02,
+    can_transmission_fail = 0x03,
+    not_info_cmd = 0x04,
+    not_valid_cmd = 0x05,
+    invalid_data_length = 0x06,
+    input_out_of_range = 0x07
 };
 
 enum axis_states {
-    undef                               = 0x0,
-    idle                                = 0x1,
-    startup_sequence                    = 0x2,
-    full_calibration_sequence           = 0x3,
-    motor_calibration                   = 0x4,
-    sensorless_control                  = 0x5,
-    encoder_index_search                = 0x6,
-    encoder_offset_calibration          = 0x7,
-    closed_loop_control                 = 0x8,
-    lockin_spin                         = 0x9,
-    encoder_dir_find                    = 0xA,
-    homing                              = 0xB,
-    encoder_hall_polarity_calibration   = 0xC,
-    encoder_hall_phase_calibration      = 0xD,
-    anticogging_calibration             = 0xE
+    undef = 0x0,
+    idle = 0x1,
+    startup_sequence = 0x2,
+    full_calibration_sequence = 0x3,
+    motor_calibration = 0x4,
+    sensorless_control = 0x5,
+    encoder_index_search = 0x6,
+    encoder_offset_calibration = 0x7,
+    closed_loop_control = 0x8,
+    lockin_spin = 0x9,
+    encoder_dir_find = 0xA,
+    homing = 0xB,
+    encoder_hall_polarity_calibration = 0xC,
+    encoder_hall_phase_calibration = 0xD,
+    anticogging_calibration = 0xE
 };
 
 enum control_mode {
-    voltage_control     = 0x0,
-    torque_control      = 0x1,
-    velocity_control    = 0x2,
-    position_control    = 0x3
+    voltage_control = 0x0,
+    torque_control = 0x1,
+    velocity_control = 0x2,
+    position_control = 0x3
 };
 
 enum input_mode {
-    inactive        = 0x0,
-    passthrough     = 0x1,
-    vel_ramp        = 0x2,
-    pos_filter      = 0x3,
-    mix_channels    = 0x4,
-    trap_traj       = 0x5,
-    torque_ramp     = 0x6,
-    mirror          = 0x7,
-    tuning          = 0x8
+    inactive = 0x0,
+    passthrough = 0x1,
+    vel_ramp = 0x2,
+    pos_filter = 0x3,
+    mix_channels = 0x4,
+    trap_traj = 0x5,
+    torque_ramp = 0x6,
+    mirror = 0x7,
+    tuning = 0x8
 };
 
 enum action {
-    a_reboot                = 0x0,
-    a_save_configuration    = 0x1,
-    a_erase_configuration   = 0x2,
-    a_enter_dfu_mode        = 0x3
+    a_reboot = 0x0,
+    a_save_configuration = 0x1,
+    a_erase_configuration = 0x2,
+    a_enter_dfu_mode = 0x3
 };
 
 struct errors {
@@ -122,84 +122,66 @@ struct errors {
 
 struct mtr_values {
     uint32_t axis_error;
-    uint8_t  axis_state;
+    uint8_t axis_state;
     uint32_t active_errors;
     uint32_t disarm_reason;
-    float    pos_estimate;
-    float    vel_estimate;
-    float    iq_setpoint;
-    float    iq_measured;
-    float    fet_temp;
-    float    motor_temp;
-    float    bus_voltage;
-    float    bus_current;
-    float    torque_tar;
-    float    torque_estimate;
-    float    elec_power;
-    float    mech_power;
-    errors   current_errors;
+    float pos_estimate;
+    float vel_estimate;
+    float iq_setpoint;
+    float iq_measured;
+    float fet_temp;
+    float motor_temp;
+    float bus_voltage;
+    float bus_current;
+    float torque_tar;
+    float torque_estimate;
+    float elec_power;
+    float mech_power;
+    errors current_errors;
 };
 
-class ODriveCanMtr {
-  private:
-    uint8_t  _node_id;
-    int (*can_send_msg)(uint16_t can_id, uint8_t len, uint8_t* data, bool rtr);
-    uint32_t _mtr_last_hb;
-    float_conv flt_cnv;
-    uint16_t _timeout;
-    void process_errors(uint32_t input);
+class ODriveCanMtr
+{
+    private:
+        uint8_t _node_id; //Be careful 0x3f is the broadcast ID!
 
-    // Non-blocking bring-up state
-    bool _busy = false;
-    uint32_t _op_deadline = 0;
-    enum _op_t { OP_NONE, OP_CAL, OP_TO_CLOSED } _op = OP_NONE;
+        //Can message abstraction function
+        int (*can_send_msg) (uint16_t can_id, uint8_t len, uint8_t* data, bool rtr);
+        uint32_t _mtr_last_hb;
+        float_conv flt_cnv;
+        uint16_t _timeout;
+        void proccess_errors(uint32_t input);
+    public:
+        ODriveCanMtr(int (*send_func) (uint16_t can_id, uint8_t len, uint8_t* data, bool rtr), uint8_t node_id);
+        void begin();
+        int process_cmd(cmd_id cmd, uint8_t len, uint8_t* data);
+        int process_msg(uint16_t can_id, uint8_t len, uint8_t* data);
+        int stop();
+        bool config_motor();
+        int req_info_cmd(cmd_id cmd);
+        bool set_timeout(uint16_t timeout_ms);
 
-  public:
-    // Lifecycle
-    ODriveCanMtr(int (*send_func)(uint16_t,uint8_t,uint8_t*,bool), uint8_t node_id);
-    void begin();
+        int set_axis_state(uint32_t state);
+        int set_cont_mode(uint32_t cont_mode, uint32_t ip_mode);
+        int set_ip_pos(float ip_pos, int16_t vel, int16_t torque);
+        int set_ip_vel(float vel, float torque);
+        int set_ip_torq(float torque);
+        int set_lim(float vel_lim, float cur_lim);
+        int set_traj_vel_limit(float vel_lim);
+        int set_traj_accel_limits(float accel_limit, float decel_limit);
+        int set_traj_inertia(float interia);
+        int reboot_mtr(uint8_t action);
+        int clear_errors();
+        int set_absolute_position(float pos);
+        int set_position_gain(float pos_gain);
+        int set_velocity_gains(float vel_gain, float vel_integ_gain);
 
-    // RX processing
-    int process_cmd(cmd_id cmd, uint8_t len, uint8_t* data);
-    int process_msg(uint16_t can_id, uint8_t len, uint8_t* data);
+        ~ODriveCanMtr();
 
-    // Queries & utilities
-    int  req_info_cmd(cmd_id cmd);
-    bool set_timeout(uint16_t timeout_ms);
-    bool wait_for_state(uint8_t target, uint32_t timeout_ms);
-
-    // Bring-up helpers
-    bool calibrate_if_needed_and_enable(float vel_lim, float cur_lim,
-                                        control_mode c_mode = velocity_control,
-                                        input_mode   i_mode = vel_ramp);
-    bool service(bool auto_enable=true, float vel_lim=10.0f, float cur_lim=3.0f);
-
-    // Commands
-    int stop();
-    bool config_motor(); // stub; use SDO/USB for persistent params
-    int set_axis_state(uint32_t state);
-    int set_cont_mode(uint32_t cont_mode, uint32_t ip_mode);
-    int set_ip_pos(float ip_pos, int16_t vel, int16_t torque);
-    int set_ip_vel(float vel, float torque);
-    int set_ip_torq(float torque);
-    int set_lim(float vel_lim, float cur_lim);
-    int set_traj_vel_limits(float vel_lim);
-    int set_traj_accel_limits(float accel_limit, float decel_limit);
-    int set_traj_inertia(float inertia);
-    int reboot_mtr(uint8_t action);
-    int clear_errors();
-    int set_absolute_position(float pos);
-    int set_position_gain(float pos_gain);
-    int set_velocity_gains(float vel_gain, float vel_integ_gain);
-
-    // Info
-    uint8_t node_id();
-    bool mtr_connected();
-
-    // Data
-    mtr_values last_mtr_values;
-
-    ~ODriveCanMtr();
+        //Values
+        uint8_t node_id();
+        bool mtr_connected();
+        mtr_values last_mtr_values;
 };
 
 #endif
