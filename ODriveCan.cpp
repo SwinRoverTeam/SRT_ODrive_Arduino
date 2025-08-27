@@ -405,25 +405,26 @@ bool ODriveCanMtr::mtr_connected()
 
 void ODriveCanMtr::proccess_errors(uint32_t input)
 {
-    last_mtr_values.current_errors.initalising = (input >> 0) & 0b1;
-    last_mtr_values.current_errors.system_level = (input >> 1) & 0b1;
-    last_mtr_values.current_errors.timing_error = (input >> 2) & 0b1;
-    last_mtr_values.current_errors.bad_config = (input >> 3) & 0b1;
-    last_mtr_values.current_errors.drv_fault = (input >> 4) & 0b1;
-    last_mtr_values.current_errors.missing_input = (input >> 5) & 0b1;
-    last_mtr_values.current_errors.dc_bus_over_voltage = (input >> 6) & 0b1;
-    last_mtr_values.current_errors.dc_bus_under_voltage = (input >> 7) & 0b1;
-    last_mtr_values.current_errors.dc_bus_over_current = (input >> 8) & 0b1;
-    last_mtr_values.current_errors.dc_bus_over_regen_current = (input >> 9) & 0b1;
-    last_mtr_values.current_errors.current_limit_violation = (input >> 10) & 0b1;
-    last_mtr_values.current_errors.motor_over_temp = (input >> 11) & 0b1;
-    last_mtr_values.current_errors.inverter_over_temp = (input >> 12) & 0b1;
-    last_mtr_values.current_errors.velocity_limit_violation = (input >> 13) & 0b1;
-    last_mtr_values.current_errors.position_limit_violation = (input >> 14) & 0b1;
-    last_mtr_values.current_errors.watchdog_timer_expired = (input >> 15) & 0b1;
-    last_mtr_values.current_errors.estop_requested = (input >> 16) & 0b1;
-    last_mtr_values.current_errors.spinout_detected = (input >> 17) & 0b1;
-    last_mtr_values.current_errors.brake_resistor_disarmed = (input >> 18) & 0b1;
-    last_mtr_values.current_errors.thermistor_disconnected = (input >> 19) & 0b1;
-    last_mtr_values.current_errors.calibration_error = (input >> 20) & 0b1;
+    last_mtr_values.current_errors.initalising              = (input >> 0)  & 0x1;
+    last_mtr_values.current_errors.system_level             = (input >> 1)  & 0x1;
+    last_mtr_values.current_errors.timing_error             = (input >> 2)  & 0x1;
+    last_mtr_values.current_errors.missing_estimate         = (input >> 3)  & 0x1;
+    last_mtr_values.current_errors.bad_config               = (input >> 4)  & 0x1;
+    last_mtr_values.current_errors.drv_fault                = (input >> 5)  & 0x1;
+    last_mtr_values.current_errors.missing_input            = (input >> 6)  & 0x1;
+    last_mtr_values.current_errors.dc_bus_over_voltage      = (input >> 7)  & 0x1;
+    last_mtr_values.current_errors.dc_bus_under_voltage     = (input >> 8)  & 0x1;
+    last_mtr_values.current_errors.dc_bus_over_current      = (input >> 9)  & 0x1;
+    last_mtr_values.current_errors.dc_bus_over_regen_current= (input >> 10) & 0x1;
+    last_mtr_values.current_errors.current_limit_violation  = (input >> 11) & 0x1;
+    last_mtr_values.current_errors.motor_over_temp          = (input >> 12) & 0x1;
+    last_mtr_values.current_errors.inverter_over_temp       = (input >> 13) & 0x1;
+    last_mtr_values.current_errors.velocity_limit_violation = (input >> 14) & 0x1;
+    last_mtr_values.current_errors.position_limit_violation = (input >> 15) & 0x1;
+    last_mtr_values.current_errors.watchdog_timer_expired   = (input >> 16) & 0x1;
+    last_mtr_values.current_errors.estop_requested          = (input >> 17) & 0x1;
+    last_mtr_values.current_errors.spinout_detected         = (input >> 18) & 0x1;
+    last_mtr_values.current_errors.brake_resistor_disarmed  = (input >> 19) & 0x1;
+    last_mtr_values.current_errors.thermistor_disconnected  = (input >> 20) & 0x1;
+    last_mtr_values.current_errors.calibration_error        = (input >> 21) & 0x1;
 }
