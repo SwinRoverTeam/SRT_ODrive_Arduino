@@ -25,7 +25,7 @@ enum cmd_id {
     set_limit               = 0x00f,
     set_traj_vel_limits     = 0x011,
     set_traj_accel_limits   = 0x012,
-    set_traj_intertia       = 0x013,
+    set_traj_inertia        = 0x013,
     get_iq                  = 0x014,
     get_temp                = 0x015,
     reboot                  = 0x016,

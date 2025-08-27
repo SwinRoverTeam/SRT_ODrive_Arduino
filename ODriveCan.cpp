@@ -148,7 +148,9 @@ int ODriveCanMtr::process_msg(uint16_t can_id, uint8_t len, uint8_t* data)
 bool ODriveCanMtr::set_timeout(uint16_t timeout_ms)
 {
     _timeout = timeout_ms;
+    return true;
 }
+
 
 int ODriveCanMtr::req_info_cmd(cmd_id cmd)
 {
@@ -181,6 +183,12 @@ int ODriveCanMtr::req_info_cmd(cmd_id cmd)
 int ODriveCanMtr::stop()
 {
     return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::estop), 0, 0, false);
+}
+
+bool ODriveCanMtr::config_motor()
+{
+    // TODO: add your one-shot config sequence if needed
+    return false; // explicit stub
 }
 
 int ODriveCanMtr::set_axis_state(uint32_t state)
@@ -326,7 +334,7 @@ int ODriveCanMtr::set_traj_inertia(float interia)
     data[1] = (flt_cnv.u32 >> 8) & 0xFF;
     data[0] = (flt_cnv.u32) & 0xFF;
 
-    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_traj_intertia), 4, data, false);   
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::set_traj_inertia), 4, data, false);   
 }
 
 int ODriveCanMtr::reboot_mtr(uint8_t action)
@@ -428,3 +436,5 @@ void ODriveCanMtr::proccess_errors(uint32_t input)
     last_mtr_values.current_errors.thermistor_disconnected  = (input >> 20) & 0x1;
     last_mtr_values.current_errors.calibration_error        = (input >> 21) & 0x1;
 }
+
+ODriveCanMtr::~ODriveCanMtr() {}
