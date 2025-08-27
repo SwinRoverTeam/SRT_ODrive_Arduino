@@ -343,11 +343,10 @@ int ODriveCanMtr::reboot_mtr(uint8_t action)
 
 int ODriveCanMtr::clear_errors()
 {
-    uint8_t data[1];
-
-    data[0] = 0;
-    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::reboot), 1, data, false);
+    // ODrive expects a zero-length data frame for clear_errors.
+    return can_send_msg((_node_id << 5) + ((uint8_t) cmd_id::clear_errors), 0, 0, false);
 }
+
 
 int ODriveCanMtr::set_absolute_position(float pos)
 {
