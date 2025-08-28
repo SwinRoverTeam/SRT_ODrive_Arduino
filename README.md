@@ -64,8 +64,7 @@ platformio.ini
 ```
 
 - The **`.vscode/`** files are safe to commit and are provider‑based (no hardcoded user paths).
-- The **`assets/`** folder is optional; keep your DBC and diagrams there.
-
+  
 ---
 
 ## 🧰 Requirements
