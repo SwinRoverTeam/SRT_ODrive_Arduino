@@ -1,12 +1,10 @@
 {
-    "files.associations": {
-        "*.css": "tailwindcss",
-        "cstdint": "cpp",
-        "array": "cpp",
-        "string": "cpp",
-        "string_view": "cpp",
-        "ranges": "cpp",
-        "span": "cpp",
-        "compare": "cpp"
-    }
+  // Tell IntelliSense to use PlatformIO's provider
+  "C_Cpp.default.configurationProvider": "platformio.platformio-ide",
+
+  // Optional: stop VS Code from nagging about intellisense errors
+  "C_Cpp.errorSquiggles": "enabled",
+
+  // Always format on save (your preference)
+  "editor.formatOnSave": true
 }

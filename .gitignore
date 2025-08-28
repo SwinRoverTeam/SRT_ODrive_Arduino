@@ -1,0 +1,29 @@
+# PlatformIO build output
+.pio/
+.pioenvs/
+.piolibdeps/
+.piodebug/
+
+# VS Code settings (we keep .vscode/ but ignore user-specific junk)
+.vscode/*
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+!.vscode/extensions.json
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Python virtual environments (PlatformIO uses one under .platformio/penv, but that lives in user home)
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Logs
+*.log
+
+# Backup files
+*~
+*.bak
+*.swp
