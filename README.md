@@ -80,6 +80,7 @@ platformio.ini
 
 - Setup & dependencies: [docs/SETUP.md](docs/SETUP.md)
 - Background on CAN & ODrive protocol: [docs/ODrive_CAN_Background.md](docs/ODrive_CAN_Background.md)
+- GIM8108-08 Documentation: [docs/Steadywin_GIM8108-8.md](docs/Steadywin_GIM8108-8.md)
 - Official ODrive CAN docs: https://docs.odriverobotics.com/v/latest/manual/can-protocol.html
 
 ---
