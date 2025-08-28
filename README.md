@@ -57,8 +57,6 @@ src/
 docs/
   SETUP.md
   ODrive_CAN_Background.md
-assets/
-  cansimple-msg-id.png      # referenced by the docs (optional)
 .vscode/
   settings.json
   c_cpp_properties.json
