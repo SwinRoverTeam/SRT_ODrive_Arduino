@@ -210,6 +210,7 @@ int ODriveCanMtr::set_axis_state(uint32_t state)
     data[2] = (state >> 16) & 0xFF;
     data[1] = (state >> 8) & 0xFF;
     data[0] = state & 0xFF;
+    Serial.println("Setting axis state to " + String(state));
     return can_send_msg((_node_id << 5) + ((uint8_t)cmd_id::set_axis_state), 4, data, false);
 }
 

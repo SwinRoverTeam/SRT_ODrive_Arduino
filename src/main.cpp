@@ -42,13 +42,13 @@ void loop()
 {
     can_check_recv();
 
-    if (!mtr1.mtr_connected())
-    {
-        Serial.println("Heartbeat timeout: re-initializing axis");
-        init_motor();
-        mtr1.set_lim(5.0f, 2.0f);
-        mtr1.set_ip_vel(3.0f, 0.5f);
-    }
+    // if (!mtr1.mtr_connected())
+    // {
+    //     Serial.println("Heartbeat timeout: re-initializing axis");
+    //     init_motor();
+    //     mtr1.set_lim(5.0f, 2.0f);
+    //     mtr1.set_ip_vel(3.0f, 0.5f);
+    // }
 
     // (Optional) poll a bit
     delay(5);
