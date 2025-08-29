@@ -18,7 +18,7 @@ void setup()
     Serial.begin(115200);
 
     // GIM default bitrate: 500 kbit/s
-    if (!init_twai((gpio_num_t)5, (gpio_num_t)4))
+    if (!init_twai((gpio_num_t)43, (gpio_num_t)44))
     { // TX, RX pins – adjust for your board
         Serial.println("TWAI init failed");
         while (1)
