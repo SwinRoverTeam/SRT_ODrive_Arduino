@@ -111,13 +111,11 @@ bool init_twai(gpio_num_t tx, gpio_num_t rx)
 void can_check_recv()
 {
     twai_message_t msg;
-    while (twai_receive(&msg, 0) == ESP_OK)
+    while (twai_receive(&msg, pdMS_TO_TICKS(2)) == ESP_OK)
     {
         // Only parse data frames (RTR have no payload to parse)
         if (!msg.rtr)
-        {
             mtr1.process_msg(msg.identifier, msg.data_length_code, msg.data);
-        }
     }
 }
 
@@ -139,20 +137,17 @@ bool wait_axis_idle_no_error(uint32_t ms_timeout)
 }
 
 // Wait until axis reaches CLOSED_LOOP_CONTROL (and no axis_error)
-bool wait_closed_loop(uint32_t ms_timeout)
+bool wait_closed_loop(uint32_t ms)
 {
     uint32_t t0 = millis();
-    while (millis() - t0 < ms_timeout)
+    while (millis() - t0 < ms)
     {
-        can_check_recv();
-        if (mtr1.last_mtr_values.axis_state == closed_loop_control &&
-            mtr1.last_mtr_values.axis_error == 0)
-        {
-            return true;
-        }
+        can_check_recv(); // must run often
         if (mtr1.last_mtr_values.axis_error != 0)
             return false;
-        delay(20);
+        if (mtr1.last_mtr_values.axis_state == closed_loop_control)
+            return true;
+        delay(2); // tiny yield
     }
     return false;
 }
@@ -204,7 +199,7 @@ void init_motor()
 
     // First attempt: go straight to closed loop (works if already calibrated/saved)
     mtr1.set_axis_state(closed_loop_control);
-    if (wait_closed_loop(1000))
+    if (wait_closed_loop(3000))
     {
         Serial.println("Entered closed loop (pre-calibrated).");
         return;
