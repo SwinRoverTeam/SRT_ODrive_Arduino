@@ -7,7 +7,7 @@ This guide gets new developers building this project with **PlatformIO** quickly
 ## 1) Install the Tools
 
 - **Visual Studio Code**: https://code.visualstudio.com/
-- **PlatformIO IDE** (VS Code extension): search “PlatformIO IDE” in the Extensions tab
+- **PlatformIO IDE** (VS Code extension): search “PlatformIO IDE” in the Extensions tab (after installing restart vs code)
 - **Git** (optional but recommended): https://git-scm.com/
 
 ---
