@@ -142,12 +142,12 @@ bool wait_closed_loop(uint32_t ms)
     uint32_t t0 = millis();
     while (millis() - t0 < ms)
     {
-        can_check_recv(); // must run often
-        if (mtr1.last_mtr_values.axis_error != 0)
+        can_check_recv();
+        if (mtr1.last_mtr_values.axis_error)
             return false;
         if (mtr1.last_mtr_values.axis_state == closed_loop_control)
             return true;
-        delay(2); // tiny yield
+        delay(2);
     }
     return false;
 }
@@ -155,39 +155,57 @@ bool wait_closed_loop(uint32_t ms)
 // Run calibration once, save to flash, reboot, and wait for heartbeats
 bool calibrate_and_save()
 {
-    Serial.println("Calibration: starting full_calibration_sequence");
-    if (mtr1.set_axis_state(full_calibration_sequence) != success)
+    Serial.println("Calibration start (motor + encoder)");
+    mtr1.clear_errors(); // clear any latched faults first
+
+    // Motor cal
+    if (mtr1.set_axis_state(motor_calibration) != success)
     {
-        Serial.println("Calibration: cmd tx failed");
+        Serial.println("TX fail: motor_calibration");
         return false;
     }
-
-    // Give it time to run the sequence (spins motor)
-    if (!wait_axis_idle_no_error(15000))
-    { // 15 s window is usually ample
-        Serial.print("Calibration: failed. axis_error=0x");
+    if (!wait_axis_idle_no_error(12000))
+    { // up to 12s; be generous
+        Serial.print("Motor cal failed, axis_error=0x");
         Serial.println(mtr1.last_mtr_values.axis_error, HEX);
         return false;
     }
 
-    Serial.println("Calibration OK. Saving config & rebooting...");
-    if (mtr1.reboot_mtr(a_save_configuration) != success)
+    // Encoder offset cal
+    if (mtr1.set_axis_state(encoder_offset_calibration) != success)
     {
-        Serial.println("Save+reboot command failed");
+        Serial.println("TX fail: encoder_offset_calibration");
+        return false;
+    }
+    if (!wait_axis_idle_no_error(12000))
+    {
+        Serial.print("Encoder cal failed, axis_error=0x");
+        Serial.println(mtr1.last_mtr_values.axis_error, HEX);
         return false;
     }
 
-    // Wait for device to reboot and resume heartbeat
-    delay(1500);
+    Serial.println("Cal OK. Saving config & rebooting...");
+    if (mtr1.reboot_mtr(a_save_configuration) != success)
+    { // CAN-Simple 'save + reboot'
+        Serial.println("Save+reboot TX failed");
+        return false;
+    }
+
+    // Reboot can be slow; wait longer for heartbeat to resume
     uint32_t t0 = millis();
-    while (millis() - t0 < 3000)
-    { // 3 s to see heartbeats again
+    delay(2500); // initial settle
+    while (millis() - t0 < 8000)
+    { // up to ~8s total
         can_check_recv();
         if (mtr1.mtr_connected())
-            break;
-        delay(20);
+        {
+            mtr1.clear_errors(); // clear any post-reboot flags
+            return true;
+        }
+        delay(10);
     }
-    return mtr1.mtr_connected();
+    Serial.println("No heartbeat after save+reboot");
+    return false;
 }
 
 // Try closed loop; if it fails, calibrate, save, reboot, and try again
