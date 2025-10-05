@@ -68,7 +68,7 @@ ODrive uses **Standard 11‑bit CAN IDs** split into:
 | Set Traj Accel Limits | 0x12 |
 | Set Traj Inertia | 0x13 |
 | Get Iq | 0x14 |
-| Get Temperature | 0x15 |
+| Get Temperature\* | 0x15 |
 | Reboot | 0x16 |
 | Get Bus Voltage Current | 0x17 |
 | Clear Errors | 0x18 |
@@ -79,6 +79,8 @@ ODrive uses **Standard 11‑bit CAN IDs** split into:
 | Get Powers | 0x1D |
 | **(reserved)** | 0x1E |
 | Enter DFU Mode | 0x1F |
+
+\*The gims we use don't use this command, see [Steadywin markdown](./Steadywin_GIM8108-8.md)
 
 ### Node & Command extraction
 

@@ -155,6 +155,7 @@ mtr1.set_ip_vel( (110.0/60.0) * 8, 0.0 ); // command nominal output speed (110 r
 - Post‑gear constants (1.0 Nm/A, 6.67 rpm/V) are **not** what ODrive wants; convert to motor-side.  
 - If it runs away at closed loop entry: swap any two motor phases **or** invert encoder direction.  
 - Long leads? Twist phases; shield encoders; add ferrites near the drive.  
+- The Gims aren't fully ODrive complient, Get Temperature (0x15) is replaced with Get Sensorless Estimates Motor.
 
 ---
 
