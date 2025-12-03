@@ -1,4 +1,7 @@
 #include "SRT_CanRouter.h"
+#include <Arduino.h>
+#include "driver/twai.h"
+#include "SRT_OpenCan.h"
 
 ParsedId parse_can_id(uint16_t can_id) {
     // proto = UNKNOWN, node_id = 0, cmd_or_func = 0

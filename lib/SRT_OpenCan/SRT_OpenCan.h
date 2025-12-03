@@ -1,5 +1,5 @@
-#ifndef SRT_CANOPEN_H
-#define SRT_CANOPEN_H
+#ifndef SRT_OpenCan_H
+#define SRT_OpenCan_H
 
 #include <Arduino.h>
 #include "driver/twai.h"

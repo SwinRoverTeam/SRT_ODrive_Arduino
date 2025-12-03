@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include "SRT_Odrive.h"
-#include "SRT_CanOpen.h"
+#include "SRT_OpenCan.h"
 
 enum class Proto { ODRIVE, OPENCAN, UNKNOWN };
 
@@ -14,9 +14,9 @@ struct ParsedId {
 };
 
 ParsedId parse_can_id(uint16_t can_id);
-
+// send messages to right motor object
 void process_can_frame(uint16_t id, uint8_t len, uint8_t* data,
                        SRT_OdriveMtr& odrive,
-                       SRT_CanOpenMtr& opencan);
+                       SRT_CanOpenMtr& opencan); // send messages to right motor object
 
 #endif

@@ -1,4 +1,7 @@
-#include "SRT_CanOpen.h"
+
+#include "SRT_OpenCan.h"
+#include <Arduino.h>
+#include "driver/twai.h"
 
 SRT_CanOpenMtr::SRT_CanOpenMtr(
     int (*send_func)(uint16_t, uint8_t, uint8_t*, bool),
@@ -14,8 +17,7 @@ int SRT_CanOpenMtr::process_msg(uint16_t can_id, uint8_t len, uint8_t* data) {
     return 0;
 }
 
-int SRT_CanOpenMtr::send_sdo_write(uint16_t index, uint8_t sub,
-                                   uint32_t value, uint8_t size) {
+int SRT_CanOpenMtr::send_sdo_write(uint16_t index, uint8_t sub, uint32_t value, uint8_t size) {
     uint16_t can_id = 0x600 + _node_id;
     uint8_t cs = (size == 1) ? 0x2F : (size == 2) ? 0x2B : 0x23;
 
