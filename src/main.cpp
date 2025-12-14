@@ -18,7 +18,7 @@ constexpr size_t  NUM_ODRIVE_MOTORS   = sizeof(ODRIVE_NODE_IDS) / sizeof(ODRIVE_
 
 // CANopen: 0..31, but 0 reserved for broadcast
 //set lichuan motors to as many as needed and and there can_id addresses
-constexpr uint8_t OPENCAN_NODE_IDS[]  = {1, 2, 3, 4};
+constexpr uint8_t OPENCAN_NODE_IDS[]  = {1, 2, 3, 4, 5};
 //do not touch this function this tests how many of each motor there is of lichuan
 constexpr size_t  NUM_OPENCAN_MOTORS  = sizeof(OPENCAN_NODE_IDS) / sizeof(OPENCAN_NODE_IDS[0]);
 
@@ -72,6 +72,7 @@ SRT_CanOpenMtr  opencans[NUM_OPENCAN_MOTORS] = {
     SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[1]),
     SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[2]),
     SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[3]),
+    SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[4]),
 };
 void init_odrive_motors() {
     for (size_t i = 0; i < NUM_ODRIVE_MOTORS; ++i) {
@@ -158,9 +159,12 @@ void loop() {
                 break;
 
             case 1:
+                break;
             case 2:
+                break;
             case 3:
-                // No commands for other ODrives yet
+                break;
+            case 4:
                 break;
         }
     }
@@ -173,6 +177,19 @@ void loop() {
             case 2:
             case 3:
                 break;
+            case 4:
+            /* do not know if this works yet
+                static bool pos_toggle = false;
+
+                // CANopen node 5: simple back‑and‑forth
+                int32_t target = pos_toggle ? 10000 : -10000; // steps / counts (depends on drive)
+                    opencans[4].set_profile_position(target, 1000, 500, 500);
+
+                    pos_toggle = !pos_toggle;
+                    delay(1000);
+            
+                // No commands for other ODrives yet
+                break; */
         }
     }
 
