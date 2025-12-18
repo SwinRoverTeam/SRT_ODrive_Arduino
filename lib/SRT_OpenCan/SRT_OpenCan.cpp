@@ -1,54 +1,38 @@
-
 #include "SRT_OpenCan.h"
-#include <Arduino.h>
-#include "driver/twai.h"
 
 SRT_CanOpenMtr::SRT_CanOpenMtr(
     int (*send_func)(uint16_t, uint8_t, uint8_t*, bool),
     uint8_t node_id
-) : _node_id(node_id), can_send_msg(send_func) {}
+) {
+    _node_id = node_id;
+    can_send_msg = send_func;
+}
 
 int SRT_CanOpenMtr::process_msg(uint16_t can_id, uint8_t len, uint8_t* data) {
-    // CANopen base uses 11‑bit ID: [10:7]=function code, [6:0]=nodeID
-    uint8_t node = can_id & 0x7F;
-    if (node != _node_id && node != 0) return -1;  // 0 is broadcast
-
-    // For now just accept, you can later decode PDO/SDO replies if needed.
-    (void)len;
-    (void)data;
+    if ((can_id & 0x7F) != _node_id) return -1;  // Not our node
+    // TODO: parse SDO/PDO responses later
     return 0;
 }
 
-int SRT_CanOpenMtr::send_sdo_write(uint16_t index, uint8_t sub,
-                                   uint32_t value, uint8_t size) {
+int SRT_CanOpenMtr::send_sdo_write(uint16_t index, uint8_t sub, uint32_t value, uint8_t size) {
     uint16_t can_id = 0x600 + _node_id;
-
-    uint8_t cs;
-    switch (size) {
-        case 1: cs = 0x2F; break;
-        case 2: cs = 0x2B; break;
-        case 4: cs = 0x23; break;
-        default:
-            Serial.println("[SRT_CanOpen] invalid SDO size");
-            return -1;
-    }
+    uint8_t cs = (size == 1) ? 0x2F : (size == 2) ? 0x2B : 0x23;
 
     uint8_t data[8] = {
         cs,
-        (uint8_t)(index & 0xFF),
-        (uint8_t)((index >> 8) & 0xFF),
+        static_cast<uint8_t>(index & 0xFF),
+        static_cast<uint8_t>((index >> 8) & 0xFF),
         sub,
-        (uint8_t)(value & 0xFF),
-        (uint8_t)((value >> 8) & 0xFF),
-        (uint8_t)((value >> 16) & 0xFF),
-        (uint8_t)((value >> 24) & 0xFF)
+        static_cast<uint8_t>(value & 0xFF),
+        static_cast<uint8_t>((value >> 8) & 0xFF),
+        static_cast<uint8_t>((value >> 16) & 0xFF),
+        static_cast<uint8_t>((value >> 24) & 0xFF)
     };
 
     return can_send_msg(can_id, 8, data, false);
 }
 
 int SRT_CanOpenMtr::enable_motor() {
-    // 6 -> 7 -> 15 @ 0x6040 as per manual
     send_sdo_write(0x6040, 0x00, 6, 2);
     delay(10);
     send_sdo_write(0x6040, 0x00, 7, 2);
@@ -56,38 +40,98 @@ int SRT_CanOpenMtr::enable_motor() {
     return send_sdo_write(0x6040, 0x00, 15, 2);
 }
 
-int SRT_CanOpenMtr::set_profile_position(int32_t pos,
-                                         uint32_t vel_rpm,
-                                         uint32_t accel_ms,
-                                         uint32_t decel_ms) {
-    // 1) mode = position (6060 = 1)
-    send_sdo_write(0x6060, 0x00, 1, 1);
+int SRT_CanOpenMtr::move_relative(int32_t steps, uint32_t accel_ms, uint32_t decel_ms) {
 
-    // 2) motion params (3.2.1)
-    send_sdo_write(0x6081, 0x00, vel_rpm, 4);
+    send_sdo_write(0x6060, 0x00, 1, 1);  // Position mode
+    send_sdo_write(0x6081, 0x00, 1000, 4);// Profile velocity 1000
     send_sdo_write(0x6083, 0x00, accel_ms, 4);
     send_sdo_write(0x6084, 0x00, decel_ms, 4);
-
-    // 3) target position
-    send_sdo_write(0x607A, 0x00, (uint32_t)pos, 4);
-
-    // 4) start absolute move: 15 -> 31 (bit4 rising edge)
-    return send_sdo_write(0x6040, 0x00, 31, 2);
+    send_sdo_write(0x6040, 0x00, 15, 2);  // Ensure enabled
+    send_sdo_write(0x607A, 0x00, (uint32_t)steps, 4);  // Target position
+    return send_sdo_write(0x6040, 0x00, 95, 2);  // Start relative move
 }
 
-int SRT_CanOpenMtr::set_profile_velocity(uint32_t vel_rpm,
-                                         uint32_t accel_ms,
-                                         uint32_t decel_ms) {
-    // 1) mode = profile speed (6060 = 3)[1]
-    send_sdo_write(0x6060, 0x00, 3, 1);
+// ============= Stuff I added for serial ============== all below
 
-    // 2) parameters
-    send_sdo_write(0x60FF, 0x00, vel_rpm, 4); //0x60ff is index for target velocity, 0x00 is subindex,
-    send_sdo_write(0x6083, 0x00, accel_ms, 4);
-    send_sdo_write(0x6084, 0x00, decel_ms, 4);
+void SRT_CanOpenMtr::handleSerialCommand(const String &cmd, SRT_CanOpenMtr* motors, size_t num_Openmotors, const uint8_t* node_ids, uint32_t accel_ms, uint32_t decel_ms) {
+    if (cmd.length() == 0) return;
 
-    // 3) enable sequence (6,7,15) if not already done
-    return enable_motor();
+    if (cmd.equalsIgnoreCase("help")) { // when help typed it diaplayes help
+        Serial.println("Commands:");
+        Serial.println("  list");
+        Serial.println("  m<idx> <pos>");
+        Serial.print  ("Fixed acc/dec: ");
+        Serial.print  (accel_ms);
+        Serial.print  (", ");
+        Serial.println(decel_ms);
+        Serial.println("Examples: m0 10000   or   m1 -20000");
+        return;
+    }
+
+    if (cmd.equalsIgnoreCase("list")) { // when list typed shows list of CAN IDs
+        Serial.println("LiChuan nodes:");
+        for (size_t i = 0; i < num_Openmotors; ++i) {
+            Serial.print("  index ");
+            Serial.print(i);
+            Serial.print(" -> CAN ID ");
+            Serial.println(node_ids[i]);
+        }
+        return;
+    } 
+    
+
+    // Expect commands like "m0 10000"
+    if (cmd.charAt(0) == 'm' || cmd.charAt(0) == 'M') {
+        int space1 = cmd.indexOf(' ');
+        if (space1 < 0) {
+            Serial.println("ERR: usage m<idx> <pos>");
+            return;
+        }
+
+        String motorStr = cmd.substring(1, space1); //reading from second digit and beyond
+        int idx = motorStr.toInt(); //the index of the motor the m1 (the 1)
+        if (idx < 0 || idx >= (int)num_Openmotors) { 
+            Serial.println("ERR: motor index out of range");
+            return;
+        }
+
+        String posStr = cmd.substring(space1 + 1); //reading from beyond the first 2 digits
+        posStr.trim();
+        if (posStr.length() == 0) {
+            Serial.println("ERR: missing position");
+            return;
+        }
+
+        long targetPos = posStr.toInt(); //converts to integer from string
+
+        // Update only target position; acc/dec are fixed
+        motors[idx].move_relative((int32_t)targetPos, accel_ms, decel_ms);
+
+        Serial.print("OK: motor index "); //prints what has been sent in serial for our human brains to understand
+        Serial.print(idx);
+        Serial.print(" (CAN ID ");
+        Serial.print(node_ids[idx]);
+        Serial.print(") -> target ");
+        Serial.print(targetPos);
+        Serial.print(" (acc ");
+        Serial.print(accel_ms);
+        Serial.print(", dec ");
+        Serial.print(decel_ms);
+        Serial.println(")");
+        return;
+    }
+
+    Serial.println("Unknown command. Type 'help'.");
 }
 
 
+String SRT_CanOpenMtr::readSerialLine() {
+    String input = "";
+    while (Serial.available() > 0) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') break;
+        input += c;
+    }
+    input.trim();
+    return input;
+}

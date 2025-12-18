@@ -1,27 +1,28 @@
-#ifndef SRT_OpenCan_H
-#define SRT_OpenCan_H
+#ifndef SRT_CANOPEN_H
+#define SRT_CANOPEN_H
 
 #include <Arduino.h>
 #include "driver/twai.h"
 
 class SRT_CanOpenMtr {
 private:
-    uint8_t _node_id;  // 0..31 (your “local” node id)
-    int (*can_send_msg)(uint16_t, uint8_t, uint8_t*, bool);
-
+    uint8_t _node_id;
+    int (can_send_msg)(uint16_t, uint8_t, uint8_t, bool);
     int send_sdo_write(uint16_t index, uint8_t sub, uint32_t value, uint8_t size);
 
 public:
-    SRT_CanOpenMtr(int (*send_func)(uint16_t, uint8_t, uint8_t*, bool),
-                   uint8_t node_id);
+    SRT_CanOpenMtr(int (send_func)(uint16_t, uint8_t, uint8_t, bool), uint8_t node_id);
 
-    // Called from router when a CAN frame is for CANopen
     int process_msg(uint16_t can_id, uint8_t len, uint8_t* data);
+    int enable_motor();
+    int move_relative(int32_t steps, uint32_t accel_ms = 1000, uint32_t decel_ms = 1000);
+    static void handleSerialCommand(const String &cmd, SRT_CanOpenMtr* motors, size_t num_Openmotors, const uint8_t* node_ids, uint32_t accel_ms, uint32_t decel_ms);
+    static String readSerialLine();
 
-    // Simple profile position / velocity helpers
-    int enable_motor();                               // 6 -> 7 -> 15 at 0x6040
-    int set_profile_position(int32_t pos, uint32_t vel_rpm, uint32_t accel_ms, uint32_t decel_ms);
-    int set_profile_velocity(uint32_t vel_rpm, uint32_t accel_ms, uint32_t decel_ms);
+    //=========== Homeing attemps =========
+
+    int do_homing();                     // run homing sequence, set current pos = 0
+    int move_absolute(int32_t target, uint32_t accel_ms = 1000, uint32_t decel_ms = 1000); // move to absolute position (counts)
 };
 
 #endif
