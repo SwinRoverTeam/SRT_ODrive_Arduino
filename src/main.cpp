@@ -13,6 +13,7 @@ const uint32_t FIXED_VEL = 1000;   // 6081h BIGGER NUMBER = SLOWER SPEED
 const uint32_t FIXED_ACC = 1000;    // 6083h
 const uint32_t FIXED_DEC = 1000;    // 6084h 1 IS VERY FAST DO NOT GO BELOW 300 FOR ANY OF THESE!!!
 
+
     bool gim_moved_out_1 = false; 
 // -------- Node ID arrays --------
 // ODrive: 1+4n, between 1 and 29
@@ -29,9 +30,9 @@ constexpr size_t  NUM_OPENCAN_MOTORS  = sizeof(OPENCAN_NODE_IDS) / sizeof(OPENCA
 
 // -------- Shared CAN TX (don’t touch logic) --------
 // if you want to read more on this go ahead https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/twai.html#_CPPv418twai_transmitPK18twai_message_t15TickType_t
-int send_can_msg(uint16_t can_id, uint8_t len, uint8_t* data, bool rtr) {
+int send_can_msg(uint16_t canid, uint8_t len, uint8_t* data, bool rtr){
     twai_message_t msg{};
-    msg.identifier = can_id;
+    msg.identifier = canid;
     msg.extd = 0;// 11-bit ID normal frame length for can
     msg.rtr = rtr ? 1 : 0; // remote transmission request this is for requesting data
     msg.self = 0; // self reception request 

@@ -1,7 +1,7 @@
-#ifndef SRT_ODRIVE_H
-#define SRT_ODRIVE_H
+#ifndef ODRIVECAN_H  // Add _H suffix, proper spacing
+#define ODRIVECAN_H
+#include "Arduino.h"  // Add quotes for local include
 
-#include <Arduino.h>
 
 union float_conv {
     float    flt;

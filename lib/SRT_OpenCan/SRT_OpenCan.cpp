@@ -1,15 +1,12 @@
 #include "SRT_OpenCan.h"
 
-SRT_CanOpenMtr::SRT_CanOpenMtr(
-    int (*send_func)(uint16_t, uint8_t, uint8_t*, bool),
-    uint8_t node_id
-) {
-    _node_id = node_id;
-    can_send_msg = send_func;
+SRT_CanOpenMtr::SRT_CanOpenMtr(int (*sendfunc)(uint16_t, uint8_t, uint8_t*, bool), uint8_t nodeid) {
+    _node_id = nodeid;
+    can_send_msg = sendfunc;  // Fixed: no dereference needed
 }
 
 int SRT_CanOpenMtr::process_msg(uint16_t can_id, uint8_t len, uint8_t* data) {
-    if ((can_id & 0x7F) != _node_id) return -1;  // Not our node
+    if ((can_id & 0x7F) != _node_id) return -1; // Not our node
     // TODO: parse SDO/PDO responses later
     return 0;
 }
@@ -17,20 +14,20 @@ int SRT_CanOpenMtr::process_msg(uint16_t can_id, uint8_t len, uint8_t* data) {
 int SRT_CanOpenMtr::send_sdo_write(uint16_t index, uint8_t sub, uint32_t value, uint8_t size) {
     uint16_t can_id = 0x600 + _node_id;
     uint8_t cs = (size == 1) ? 0x2F : (size == 2) ? 0x2B : 0x23;
-
-    uint8_t data[8] = {
-        cs,
-        static_cast<uint8_t>(index & 0xFF),
-        static_cast<uint8_t>((index >> 8) & 0xFF),
-        sub,
-        static_cast<uint8_t>(value & 0xFF),
-        static_cast<uint8_t>((value >> 8) & 0xFF),
-        static_cast<uint8_t>((value >> 16) & 0xFF),
-        static_cast<uint8_t>((value >> 24) & 0xFF)
-    };
-
+    
+    uint8_t data[8];
+    data[0] = cs;
+    data[1] = static_cast<uint8_t>(index & 0xFF);
+    data[2] = static_cast<uint8_t>((index >> 8) & 0xFF);
+    data[3] = sub;
+    data[4] = static_cast<uint8_t>(value & 0xFF);
+    data[5] = static_cast<uint8_t>((value >> 8) & 0xFF);
+    data[6] = static_cast<uint8_t>((value >> 16) & 0xFF);
+    data[7] = static_cast<uint8_t>((value >> 24) & 0xFF);
+    
     return can_send_msg(can_id, 8, data, false);
 }
+
 
 int SRT_CanOpenMtr::enable_motor() {
     send_sdo_write(0x6040, 0x00, 6, 2);
