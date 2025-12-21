@@ -182,6 +182,11 @@ public:
     uint8_t node_id();
     bool    mtr_connected();
     mtr_values last_mtr_values;
+    // serial command handler
+    static void handleSerialCommand(const String &cmd, SRT_OdriveMtr* motors, size_t num_motors, 
+                               const uint8_t* node_ids);
+    static String readSerialLine();  
+
 };
 
 #endif

@@ -490,6 +490,83 @@ bool SRT_OdriveMtr::mtr_connected() {
     return (millis() - _mtr_last_hb < _timeout);
 }
 
+// Shared read function (same as OpenCAN)
+String SRT_OdriveMtr::readSerialLine() {
+    String input = "";
+    while (Serial.available() > 0) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') break;
+        input += c;
+    }
+    input.trim();
+    return input;
+}
+// Static serial command handler
+void SRT_OdriveMtr::handleSerialCommand(const String &cmd, SRT_OdriveMtr* motors, 
+                                       size_t num_motors, const uint8_t* node_ids) {
+    if (cmd.length() == 0) return;
+    
+    if (cmd.equalsIgnoreCase("odrive_help")) {
+        Serial.println("ODrive Commands:");
+        Serial.println(" odrive_list");
+        Serial.println(" o<idx> <pos>    // e.g., o0 0.5");
+        Serial.println(" o<idx> vel <vel>");
+        Serial.println(" o<idx> home     // set pos=0");
+        return;
+    }
+    
+    if (cmd.equalsIgnoreCase("odrive_list")) {
+        Serial.println("ODrive nodes:");
+        for (size_t i = 0; i < num_motors; ++i) {
+            Serial.print(" index ");
+            Serial.print(i);
+            Serial.print(" -> CAN ID ");
+            Serial.print(node_ids[i]);
+            Serial.print(" (connected: ");
+            Serial.print(motors[i].mtr_connected() ? "YES" : "NO");
+            Serial.println(")");
+        }
+        return;
+    }
+    
+    // Commands like "o0 1.5" or "o1 vel 2.0"
+    if (cmd.charAt(0) == 'o' || cmd.charAt(0) == 'O') {
+        int space1 = cmd.indexOf(' ');
+        if (space1 < 0) {
+            Serial.println("ERR: usage o<idx> <pos|vel|home>");
+            return;
+        }
+        
+        String motorStr = cmd.substring(1, space1);
+        int idx = motorStr.toInt();
+        if (idx < 0 || idx >= (int)num_motors) {
+            Serial.println("ERR: ODrive index out of range");
+            return;
+        }
+        
+        String rest = cmd.substring(space1 + 1);
+        rest.trim();
+        
+        if (rest.equalsIgnoreCase("home")) {
+            motors[idx].set_absolute_position(0.0f);
+            Serial.print("OK: ODrive "); Serial.print(idx); Serial.println(" pos=0");
+            return;
+        }
+        
+        if (rest.startsWith("vel ")) {
+            float vel = rest.substring(4).toFloat();
+            motors[idx].set_ip_vel(vel, 0.0f);
+            Serial.print("OK: ODrive "); Serial.print(idx); Serial.print(" vel="); Serial.println(vel);
+            return;
+        }
+        
+        // Position command
+        float pos = rest.toFloat();
+        motors[idx].set_ip_pos(pos, 0, 0);
+        Serial.print("OK: ODrive "); Serial.print(idx); Serial.print(" pos="); Serial.println(pos);
+    }
+}//end of serial function
+
 void SRT_OdriveMtr::proccess_errors(uint32_t input) {
     last_mtr_values.current_errors.initalising              = (input >> 0)  & 0x1;
     last_mtr_values.current_errors.system_level             = (input >> 1)  & 0x1;
@@ -516,4 +593,6 @@ void SRT_OdriveMtr::proccess_errors(uint32_t input) {
 }
 
 SRT_OdriveMtr::~SRT_OdriveMtr() {}
+
+
 

@@ -1,18 +1,8 @@
 
-This directory is intended for project specific (private) libraries.
-PlatformIO will compile them to static libraries and link into the executable file.
-
-The source code of each library should be placed in a separate directory
-("lib/your_library_name/[Code]").
-
-For example, see the structure of the following example libraries `Foo` and `Bar`:
+This Project is the combination of both Canodrive and OpenCan protoculs it allows you to use both protoculs by utilising the overlap of node ids on the 5th and 6th bit of both protoculs
 
 |--lib
 |  |
-|  |--SRT_CanRouter
-|  |  |- SRT_CanRouter.cpp
-|  |  |- SRT_CanRouter.h
-|  |  |- README
 |  |
 |  |--SRT_Odrive
 |  |  |- SRT_Odrive.cpp
