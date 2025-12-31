@@ -13,8 +13,6 @@ const uint32_t FIXED_VEL = 1000;   // 6081h BIGGER NUMBER = SLOWER SPEED
 const uint32_t FIXED_ACC = 1000;    // 6083h
 const uint32_t FIXED_DEC = 1000;    // 6084h 1 IS VERY FAST DO NOT GO BELOW 300 FOR ANY OF THESE!!!
 
-
-    bool gim_moved_out_1 = false; 
 // -------- Node ID arrays --------
 // ODrive: 1+4n, between 1 and 29
 //set odrive motors to as many as needed and and there can_id addresses
@@ -24,7 +22,7 @@ constexpr size_t  NUM_ODRIVE_MOTORS   = sizeof(ODRIVE_NODE_IDS) / sizeof(ODRIVE_
 
 // CANopen: 0..31, but 0 reserved for broadcast
 //set lichuan motors to as many as needed and and there can_id addresses
-constexpr uint8_t OPENCAN_NODE_IDS[]  = {1, 2, 3, 4, 5};
+constexpr uint8_t OPENCAN_NODE_IDS[]  = {2, 3, 4, 6,};
 //do not touch this function this tests how many of each motor there is of lichuan
 constexpr size_t  NUM_OPENCAN_MOTORS  = sizeof(OPENCAN_NODE_IDS) / sizeof(OPENCAN_NODE_IDS[0]);
 
@@ -78,7 +76,6 @@ SRT_CanOpenMtr  opencans[NUM_OPENCAN_MOTORS] = {
     SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[1]),
     SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[2]),
     SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[3]),
-    SRT_CanOpenMtr(&send_can_msg, OPENCAN_NODE_IDS[4]),
 };
 void init_odrive_motors() {
     for (size_t i = 0; i < NUM_ODRIVE_MOTORS; ++i) {
@@ -91,6 +88,7 @@ void init_odrive_motors() {
                 odrives[i].set_lim(10.0f, 20.0f);
                 odrives[i].set_traj_vel_limit(5.0f);
                 odrives[i].set_traj_accel_limits(5.0f, 5.0f);
+                odrives[i].set_absolute_position(0.0f);
                 break;
         }
     }
@@ -102,20 +100,6 @@ void init_opencan_motors() {
         delay(10);
     }
 }
-
-// ===== Serial command reading =====
-/*
-String readSerialLine() {
-    String input = ""; //reads sring that is typed
-    while (Serial.available() > 0) {
-        char c = Serial.read(); //reads serial
-        if (c == '\n' || c == '\r') break; //reads untill enter
-        input += c;
-    }
-    input.trim();
-    return input; //returns input back to loop
-}
-*/
 
 // -------- CAN RX: hand frames to all motors, they self-filter by node_id --------
 void can_check_recv() {
@@ -134,93 +118,6 @@ void can_check_recv() {
     }
 }
 
-// =========== Serial Commands ============
-/*
-  Commands:
-    help
-    list
-    m<idx> <position>
- 
-  Examples:
-    m0 10000
-    m2 -5000
- */
-
- /*
-void handleSerialCommand(const String &cmd) {
-    if (cmd.length() == 0) return;
-
-    if (cmd.equalsIgnoreCase("help")) { // when help typed it diaplayes help
-        Serial.println("Commands:");
-        Serial.println("  list");
-        Serial.println("  m<idx> <pos>");
-        Serial.print  ("Fixed vel/acc/dec: ");
-        Serial.print  (FIXED_VEL);
-        Serial.print  (", ");
-        Serial.print  (FIXED_ACC);
-        Serial.print  (", ");
-        Serial.println(FIXED_DEC);
-        Serial.println("Examples: m0 10000   or   m1 -20000");
-        return;
-    }
-
-    if (cmd.equalsIgnoreCase("list")) { // when list typed shows list of CAN IDs
-        Serial.println("LiChuan nodes:");
-        for (size_t i = 0; i < NUM_OPENCAN_MOTORS; ++i) {
-            Serial.print("  index ");
-            Serial.print(i);
-            Serial.print(" -> CAN ID ");
-            Serial.println(OPENCAN_NODE_IDS[i]);
-        }
-        return;
-    }
-
-    // Expect commands like "m0 10000"
-    if (cmd.charAt(0) == 'm' || cmd.charAt(0) == 'M') {
-        int space1 = cmd.indexOf(' ');
-        if (space1 < 0) {
-            Serial.println("ERR: usage m<idx> <pos>");
-            return;
-        }
-
-        String motorStr = cmd.substring(1, space1); //reading from second digit and beyond
-        int idx = motorStr.toInt(); //the index of the motor the m1 (the 1)
-        if (idx < 0 || idx >= (int)NUM_OPENCAN_MOTORS) { 
-            Serial.println("ERR: motor index out of range");
-            return;
-        }
-
-        String posStr = cmd.substring(space1 + 1); //reading from beyond the first 2 digits
-        posStr.trim();
-        if (posStr.length() == 0) {
-            Serial.println("ERR: missing position");
-            return;
-        }
-
-        long targetPos = posStr.toInt(); //converts to integer from string
-
-        // Update only target position; acc/dec are fixed
-        opencans[idx].move_relative((int32_t)targetPos, FIXED_ACC, FIXED_DEC);
-
-        Serial.print("OK: motor index "); //prints what has been sent in serial for our human brains to understand
-        Serial.print(idx);
-        Serial.print(" (CAN ID ");
-        Serial.print(OPENCAN_NODE_IDS[idx]);
-        Serial.print(") -> target ");
-        Serial.print(targetPos);
-        Serial.print(" (vel ");
-        Serial.print(FIXED_VEL);
-        Serial.print(", acc ");
-        Serial.print(FIXED_ACC);
-        Serial.print(", dec ");
-        Serial.print(FIXED_DEC);
-        Serial.println(")");
-        return;
-    }
-
-    Serial.println("Unknown command. Type 'help'.");
-}
-*/
 
 void setup() {
     Serial.begin(115200);
@@ -233,10 +130,7 @@ void setup() {
 
     init_odrive_motors();
     init_opencan_motors();
-
-    // Define current position as 0 for motor 0
-    odrives[0].set_absolute_position(0.0f);
-
+    
     // Debug: check axis state/error for motor 0
     Serial.print("Axis state: ");
     Serial.println(odrives[0].last_mtr_values.axis_state);
@@ -247,72 +141,18 @@ void setup() {
 }
 void loop() {
     can_check_recv();// this checks for any incoming can messages and processes them accordingly. Dont remove stinky!
+
+
+    // Check motors are in the correct state to use these commands
+
+    //odrives[i].set_ip_pos(float ip_pos, int16_t vel, int16_t torque);
+    //odrives[i].set_ip_vel(float vel, float torque);
+    //odrives[i].set_absolute_position(float pos)
+
+    //opencans[i].move_absolute(int32_t steps, uint32_t accel_ms, uint32_t decel_ms);
+    //opencans[i].move_relative(int32_t steps, uint32_t accel_ms, uint32_t decel_ms);
     
-    // ================ Opens Serial comms =============
-    /*
-    if (Serial.available() > 0) { // checks for serial and commands
-        String command = readSerialLine();
-        handleSerialCommand(command);
-    }
-    */
-    // LIBRARY DOES ALL SERIAL WORK
-    if (Serial.available() > 0) {
-        String cmd = SRT_CanOpenMtr::readSerialLine();
-        SRT_CanOpenMtr::handleSerialCommand(cmd, opencans, NUM_OPENCAN_MOTORS, OPENCAN_NODE_IDS, FIXED_ACC, FIXED_DEC);
-    }
 
-    for (size_t i = 0; i < NUM_ODRIVE_MOTORS; ++i) {
-        switch (i) {
-            case 0:
-                if (!gim_moved_out_1) {
-                    // Move motor 0 (CAN ID 1) to +0.5 turns
-                    odrives[i].set_ip_pos(0.5f, 0, 0);
-                    delay(1000);
-                    gim_moved_out_1 = true;
-                } else {
-                    // Move motor 0 back to 0 turns
-                    odrives[i].set_ip_pos(0.0f, 0, 0);
-                    delay(1000);
-                    gim_moved_out_1 = false;
-                }
-                break;
-
-            case 1:
-                break;
-            case 2:
-                break;
-            case 3:
-                break;
-            case 4:
-                break;
-        }
-    }
-
-    // You can leave this loop empty for now
-    for (size_t i = 0; i < NUM_OPENCAN_MOTORS; ++i) {
-        switch (i) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-                break;
-            case 4:
-            /* do not know if this works yet
-                static bool pos_toggle = false;
-
-                // CANopen node 5: simple back‑and‑forth
-                int32_t target = pos_toggle ? 10000 : -10000; // steps / counts (depends on drive)
-                    opencans[4].set_profile_position(target, 1000, 500, 500);
-
-                    pos_toggle = !pos_toggle;
-                    delay(1000);
-            
-                // No commands for other ODrives yet
-                */
-               break; 
-        }
-    
-    }
 
 
     delay(5);
