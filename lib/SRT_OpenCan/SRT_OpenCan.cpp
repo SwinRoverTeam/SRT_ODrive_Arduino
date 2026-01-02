@@ -30,6 +30,7 @@ int SRT_CanOpenMtr::send_sdo_write(uint16_t index, uint8_t sub, uint32_t value, 
 
 
 int SRT_CanOpenMtr::enable_motor() {
+
     send_sdo_write(0x6040, 0x00, 6, 2);
     delay(10);
     send_sdo_write(0x6040, 0x00, 7, 2);
@@ -37,22 +38,31 @@ int SRT_CanOpenMtr::enable_motor() {
     return send_sdo_write(0x6040, 0x00, 15, 2);
 }
 
-int SRT_CanOpenMtr::move_relative(int32_t steps, uint32_t accel_ms, uint32_t decel_ms) {
-
+int SRT_CanOpenMtr::move_relative(int32_t steps, uint32_t velocity, uint32_t accel_ms, uint32_t decel_ms) {
+    stop(); //Ensure there is not a movement already happening. Temporary, there are better ways of doing this!
     send_sdo_write(0x6060, 0x00, 1, 1);  // Position mode
-    send_sdo_write(0x6081, 0x00, 1000, 4);// Profile velocity 1000
+    send_sdo_write(0x6081, 0x00, velocity, 4);// Profile velocity 1000
     send_sdo_write(0x6083, 0x00, accel_ms, 4);
     send_sdo_write(0x6084, 0x00, decel_ms, 4);
-    send_sdo_write(0x6040, 0x00, 15, 2);  // Ensure enabled
+    enable_motor();  // Ensure enabled
     send_sdo_write(0x607A, 0x00, (uint32_t)steps, 4);  // Target position
     return send_sdo_write(0x6040, 0x00, 95, 2);  // Start relative move
 }
-int SRT_CanOpenMtr::move_absolute(int32_t steps, uint32_t accel_ms, uint32_t decel_ms) {
+
+int SRT_CanOpenMtr::move_absolute(int32_t steps,uint32_t velocity, uint32_t accel_ms, uint32_t decel_ms) {
+    stop(); //Ensure there is not a movement already happening. Temporary, there are better ways of doing this!
     send_sdo_write(0x6060, 0x00, 1, 1);  // Position mode
-    send_sdo_write(0x6081, 0x00, 1000, 4);// Profile velocity 1000
+    send_sdo_write(0x6081, 0x00, velocity, 4);// Profile velocity 1000
     send_sdo_write(0x6083, 0x00, accel_ms, 4);
     send_sdo_write(0x6084, 0x00, decel_ms, 4);
-    send_sdo_write(0x6040, 0x00, 15, 2);  // Ensure enabled
+    enable_motor();  // Ensure enabled
     send_sdo_write(0x607A, 0x00, (uint32_t)steps, 4);  // Target position
-    return send_sdo_write(0x6040, 0x00, 31, 2);  // Start absolute move
+    return send_sdo_write(0x6040, 0x00, 31, 2);
+}
+
+int SRT_CanOpenMtr::stop() {
+    return send_sdo_write(0x6040, 0x00, 271, 2); // Stops the motor gently
+}
+int SRT_CanOpenMtr::Estop() {
+    return send_sdo_write(0x6040, 0x00, 11, 2); // Stops the motor as quickly as possible
 }
